@@ -25,6 +25,8 @@
 
 #include <log/log.h>
 
+#include <oplus/oplus_ir_core.h>
+
 using ::aidl::android::hardware::ir::ConsumerIrFreqRange;
 
 namespace aidl::android::hardware::ir {
@@ -37,6 +39,8 @@ class ConsumerIr : public BnConsumerIr {
     ::ndk::ScopedAStatus transmit(int32_t in_carrierFreqHz,
                                   const std::vector<int32_t>& in_pattern) override;
     consumerir_device_t *mDevice = nullptr;
+
+    int mOplusConsumerIrFd;
 };
 
 ConsumerIr::ConsumerIr() {
@@ -79,8 +83,10 @@ ConsumerIr::ConsumerIr() {
 }
 
 ::ndk::ScopedAStatus ConsumerIr::transmit(int32_t in_carrierFreqHz,
-                                          const std::vector<int32_t>& in_pattern) {
+                                          const std::vector<int32_t>& in_pattern)
+    : mOplusConsumerIrFd(open("/dev/oplus_consumer_ir", O_RDWR)) {
     if (in_carrierFreqHz > 0) {
+        ioctl(mOplusConsumerIrFd, _IOC(_IOC_NONE, IR_IOCTL_GROUP, 0x2, 0));
         mDevice->transmit(mDevice, in_carrierFreqHz, in_pattern.data(), in_pattern.size());
         return ::ndk::ScopedAStatus::ok();
     } else {
